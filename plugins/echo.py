@@ -27,6 +27,8 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import UserNotParticipant
 from plugins.functions.ran_text import random_char
 from plugins.database.database import db
+from plugins.functions.upload_helpers import is_blocked, maybe_clean_filename
+from plugins.emojis import E
 from plugins.database.add import AddUser
 from pyrogram.types import Thumbnail
 cookies_file = 'cookies.txt'
@@ -78,7 +80,18 @@ async def echo(bot, update):
     youtube_dl_password = None
     file_name = None
 
+    # ---------------- blocklist words check
+    blocked_word = await is_blocked(update.from_user.id, url)
+    if blocked_word:
+        await update.reply_text(
+            f"{E.ALERT} <b>Bʟᴏᴄᴋᴇᴅ Wᴏʀᴅ Dᴇᴛᴇᴄᴛᴇᴅ</b>\n\n"
+            f"<blockquote>Yᴏᴜʀ ʟɪɴᴋ ᴄᴏɴᴛᴀɪɴs <code>{blocked_word}</code> ᴡʜɪᴄʜ ɪs ɪɴ ʏᴏᴜʀ ʙʟᴏᴄᴋʟɪsᴛ.</blockquote>",
+            quote=True,
+        )
+        return
+
     print(url)
+
     if "|" in url:
         url_parts = url.split("|")
         if len(url_parts) == 2:
