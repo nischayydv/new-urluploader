@@ -12,6 +12,7 @@ from pyrogram.errors import MessageNotModified
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery, ForceReply
 from plugins.config import Config
 from plugins.script import Translation
+from plugins.emojis import E, BTN
 from pyrogram import Client, filters
 from plugins.database.add import AddUser
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -21,7 +22,6 @@ from plugins.settings.settings import OpenSettings
 from plugins.config import *
 from plugins.functions.verify import verify_user, check_token
 from pyrogram import types, errors
-from plugins.emojis import E, e
 
 import random
 
@@ -60,21 +60,21 @@ async def start(bot, update):
 
         if str(update.from_user.id) != str(userid):
             return await update.reply_text(
-                text=Translation.INVALID_TOKEN,
+                text=f"{E.ERROR} <b>Exᴘɪʀᴇᴅ ᴏʀ ɪɴᴠᴀʟɪᴅ ʟɪɴᴋ!</b>",
                 protect_content=True
             )
 
         is_valid = await check_token(bot, userid, token)
         if is_valid:
             await update.reply_text(
-                text=Translation.VERIFIED_TEXT.format(update.from_user.mention),
+                text=f"{E.CONFETTI} <b>Hᴇʏ {update.from_user.mention}</b>\n\n{E.CONFIRM} <b>Yᴏᴜ ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ!</b>",
                 protect_content=True,
                 message_effect_id=5104841245755180586
             )
             await verify_user(bot, userid, token)
         else:
             return await update.reply_text(
-                text=Translation.INVALID_TOKEN,
+                text=f"{E.ERROR} <b>Exᴘɪʀᴇᴅ ᴏʀ ɪɴᴠᴀʟɪᴅ ʟɪɴᴋ!</b>",
                 protect_content=True
             )
 
@@ -127,13 +127,13 @@ async def add_caption_help(bot, update):
     )
 
 
-@Client.on_callback_query(filters.regex(r'^cancel_download\+'))
+@Client.on_callback_query(filters.regex('^cancel_download\+'))
 async def cancel_cb(c, m):
     await m.answer()
-    await m.message.edit(text=f"{E.CANCEL} <b>Cᴀɴᴄᴇʟʟɪɴɢ…</b>")
+    await m.message.edit(text=f"{E.CANCEL} <b>Cᴀɴᴄᴇʟʟɪɴɢ...</b>")
     id = m.data.split("+", 1)[1]
     if id not in Config.DOWNLOAD_LOCATION:
-        await m.message.edit(f"{E.ALERT} <b>Tʜɪs ᴛᴀsᴋ ɪs ᴀʟʀᴇᴀᴅʏ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>")
+        await m.message.edit(f"{E.ALERT} <b>Tʜɪs ᴘʀᴏᴄᴇss ᴡᴀs ᴀʟʀᴇᴀᴅʏ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>")
         return
     Config.DOWNLOAD_LOCATION.remove(id)
 
@@ -158,11 +158,11 @@ async def warn(c, m):
             try:
                 user_id = m.text.split(' ', 2)[1]
                 reason = m.text.split(' ', 2)[2]
-                await m.reply_text(f"{E.CONFIRM} <b>Usᴇʀ ɴᴏᴛɪꜰɪᴇᴅ sᴜᴄᴄᴇssꜰᴜʟʟʏ.</b>")
+                await m.reply_text(f"{E.CONFIRM} <b>Usᴇʀ ɴᴏᴛɪғɪᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.</b>")
                 await c.send_message(chat_id=int(user_id), text=reason)
             except:
-                 await m.reply_text(f"{E.ERROR} <b>Cᴏᴜʟᴅ ɴᴏᴛ ɴᴏᴛɪꜰʏ ᴛʜᴀᴛ ᴜsᴇʀ.</b>")
+                 await m.reply_text(f"{E.ERROR} <b>Cᴏᴜʟᴅ ɴᴏᴛ ɴᴏᴛɪғʏ ᴛʜᴀᴛ ᴜsᴇʀ.</b>")
     else:
-        await m.reply_text(text=f"{E.LOCK} <b>Yᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.</b>", quote=True)
+        await m.reply_text(text=f"{E.LOCK} <b>Tʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ᴏɴʟʏ ғᴏʀ ᴀᴅᴍɪɴs.</b>", quote=True)
 
 
