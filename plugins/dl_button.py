@@ -16,6 +16,17 @@ from plugins.config import Config
 from plugins.script import Translation
 from plugins.thumbnail import *
 from plugins.database.database import db
+from plugins.functions.upload_helpers import (
+    apply_metadata,
+    build_caption,
+    extract_archive,
+    generate_sample,
+    generate_screenshots,
+    maybe_clean_filename,
+    send_to_dump,
+    upload_flags,
+)
+
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 from plugins.functions.display_progress import progress_for_pyrogram, humanbytes, TimeFormatter
 from hachoir.metadata import extractMetadata
@@ -62,7 +73,9 @@ async def ddl_call_back(bot, update):
                 o = entity.offset
                 l = entity.length
                 youtube_dl_url = youtube_dl_url[o:o + l]
+    custom_file_name = await maybe_clean_filename(update.from_user.id, custom_file_name)
     description = Translation.CUSTOM_CAPTION_UL_FILE
+
     start = datetime.now()
     await update.message.edit_caption(
         caption=Translation.DOWNLOAD_START,
@@ -112,47 +125,28 @@ async def ddl_call_back(bot, update):
                 parse_mode=enums.ParseMode.HTML
             )
         else:
-            
+
             start_time = time.time()
-            if (await db.get_upload_as_doc(update.from_user.id)) is False:
-                thumbnail = await Gthumb01(bot, update)
-                await update.message.reply_document(
-                    document=download_directory,
-                    thumb=thumbnail,
-                    caption=description,
-                    parse_mode=enums.ParseMode.HTML,
-                    progress=progress_for_pyrogram,
-                    progress_args=(
-                        Translation.UPLOAD_START,
-                        update.message,
-                        start_time
-                    )
-                )
-            else:
-                 width, height, duration = await Mdata01(download_directory)
-                 thumb_image_path = await Gthumb02(bot, update, duration, download_directory)
-                 await update.message.reply_video(
-                    video=download_directory,
-                    caption=description,
-                    duration=duration,
-                    width=width,
-                    height=height,
-                    supports_streaming=True,
-                    parse_mode=enums.ParseMode.HTML,
-                    thumb=thumb_image_path,
-                    progress=progress_for_pyrogram,
-                    progress_args=(
-                        Translation.UPLOAD_START,
-                        update.message,
-                        start_time
-                    )
-                )
+            user_id = update.from_user.id
+            flags = await upload_flags(user_id)
+            download_directory = await apply_metadata(user_id, download_directory)
+            description = await build_caption(
+                user_id, os.path.basename(download_directory), humanbytes(file_size)
+            )
+            sent_message = None
+            thumb_image_path = None
+            flags_extra = {
+                "screenshots": bool(await db.get_setting(user_id, "generate_ss")),
+                "sample": bool(await db.get_setting(user_id, "generate_sample_video")),
+                "unzip": bool(await db.get_setting(user_id, "auto_unzip")),
+            }
             if tg_send_type == "audio":
                 duration = await Mdata03(download_directory)
                 thumbnail = await Gthumb01(bot, update)
-                await update.message.reply_audio(
+                sent_message = await update.message.reply_audio(
                     audio=download_directory,
                     caption=description,
+                    protect_content=flags["protect"],
                     parse_mode=enums.ParseMode.HTML,
                     duration=duration,
                     thumb=thumbnail,
@@ -166,7 +160,7 @@ async def ddl_call_back(bot, update):
             elif tg_send_type == "vm":
                 width, duration = await Mdata02(download_directory)
                 thumbnail = await Gthumb02(bot, update, duration, download_directory)
-                await update.message.reply_video_note(
+                sent_message = await update.message.reply_video_note(
                     video_note=download_directory,
                     duration=duration,
                     length=width,
@@ -178,9 +172,75 @@ async def ddl_call_back(bot, update):
                         start_time
                     )
                 )
+            elif (await db.get_upload_as_doc(user_id)) is False:
+                thumbnail = await Gthumb01(bot, update)
+                sent_message = await update.message.reply_document(
+                    document=download_directory,
+                    thumb=thumbnail,
+                    caption=description,
+                    protect_content=flags["protect"],
+                    parse_mode=enums.ParseMode.HTML,
+                    progress=progress_for_pyrogram,
+                    progress_args=(
+                        Translation.UPLOAD_START,
+                        update.message,
+                        start_time
+                    )
+                )
             else:
-                logger.info("Did this happen? :\\")
+                width, height, duration = await Mdata01(download_directory)
+                thumb_image_path = await Gthumb02(bot, update, duration, download_directory)
+                video_kwargs = dict(
+                    video=download_directory,
+                    caption=description,
+                    protect_content=flags["protect"],
+                    duration=duration,
+                    width=width,
+                    height=height,
+                    supports_streaming=flags["streaming"],
+                    has_spoiler=flags["spoiler"],
+                    parse_mode=enums.ParseMode.HTML,
+                    thumb=thumb_image_path,
+                    progress=progress_for_pyrogram,
+                    progress_args=(
+                        Translation.UPLOAD_START,
+                        update.message,
+                        start_time
+                    )
+                )
+                if flags["caption_up"]:
+                    video_kwargs["show_caption_above_media"] = True
+                try:
+                    sent_message = await update.message.reply_video(**video_kwargs)
+                except TypeError:
+                    video_kwargs.pop("show_caption_above_media", None)
+                    video_kwargs.pop("has_spoiler", None)
+                    sent_message = await update.message.reply_video(**video_kwargs)
+
+            # ---------------- apply post-upload settings (dump / ss / sample)
+            await send_to_dump(bot, user_id, sent_message)
+            try:
+                if flags_extra.get("screenshots"):
+                    shots = await generate_screenshots(download_directory, tmp_directory_for_each_user + "/ss")
+                    for shot in shots:
+                        await update.message.reply_photo(shot, quote=True)
+                if flags_extra.get("sample"):
+                    sample = await generate_sample(download_directory, tmp_directory_for_each_user + "/sample")
+                    if sample:
+                        sample_msg = await update.message.reply_video(
+                            sample, caption="🎬 <b>Sᴀᴍᴘʟᴇ Vɪᴅᴇᴏ</b>", quote=True
+                        )
+                        await send_to_dump(bot, user_id, sample_msg)
+                if flags_extra.get("unzip"):
+                    extracted = await extract_archive(download_directory, tmp_directory_for_each_user + "/unzip")
+                    for item in extracted[:20]:
+                        unzipped = await update.message.reply_document(item, quote=True)
+                        await send_to_dump(bot, user_id, unzipped)
+            except Exception as extra_error:
+                logger.error(f"extra features error: {extra_error}")
+
             end_two = datetime.now()
+
             try:
                 os.remove(download_directory)
                 os.remove(thumb_image_path)
