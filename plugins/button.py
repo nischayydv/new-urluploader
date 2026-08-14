@@ -13,6 +13,17 @@ from plugins.script import Translation
 from plugins.thumbnail import *
 from plugins.functions.display_progress import progress_for_pyrogram, humanbytes
 from plugins.database.database import db
+from plugins.functions.upload_helpers import (
+    apply_metadata,
+    build_caption,
+    extract_archive,
+    generate_sample,
+    generate_screenshots,
+    maybe_clean_filename,
+    send_to_dump,
+    upload_flags,
+)
+
 from PIL import Image
 from plugins.functions.ran_text import random_char
 
@@ -60,6 +71,8 @@ async def youtube_dl_call_back(bot, update):
 
         youtube_dl_url = youtube_dl_url.strip()
         custom_file_name = custom_file_name.strip()
+        custom_file_name = await maybe_clean_filename(update.from_user.id, custom_file_name)
+
         if youtube_dl_username:
             youtube_dl_username = youtube_dl_username.strip()
         if youtube_dl_password:
@@ -258,14 +271,27 @@ async def youtube_dl_call_back(bot, update):
     # Start upload
     await update.message.edit_caption(caption=Translation.UPLOAD_START.format(custom_file_name))
     start_time = time.time()
+    user_id = update.from_user.id
+    flags = await upload_flags(user_id)
+    download_directory = await apply_metadata(user_id, download_directory)
+    description = await build_caption(
+        user_id, os.path.basename(download_directory), humanbytes(file_size)
+    )
+    sent_message = None
+    flags_extra = {
+        "screenshots": bool(await db.get_setting(user_id, "generate_ss")),
+        "sample": bool(await db.get_setting(user_id, "generate_sample_video")),
+        "unzip": bool(await db.get_setting(user_id, "auto_unzip")),
+    }
 
     try:
         if tg_send_type == "audio":
             duration = await Mdata03(download_directory)
             thumbnail = await Gthumb01(bot, update)
-            await update.message.reply_audio(
+            sent_message = await update.message.reply_audio(
                 audio=download_directory,
                 caption=description,
+                    protect_content=flags["protect"],
                 duration=duration,
                 thumb=thumbnail,
                 progress=progress_for_pyrogram,
@@ -278,7 +304,7 @@ async def youtube_dl_call_back(bot, update):
         elif tg_send_type == "vm":
             width, duration = await Mdata02(download_directory)
             thumbnail = await Gthumb02(bot, update, duration, download_directory)
-            await update.message.reply_video_note(
+            sent_message = await update.message.reply_video_note(
                 video_note=download_directory,
                 duration=duration,
                 length=width,
@@ -294,10 +320,11 @@ async def youtube_dl_call_back(bot, update):
             # For video or document
             if not await db.get_upload_as_doc(update.from_user.id):
                 thumbnail = await Gthumb01(bot, update)
-                await update.message.reply_document(
+                sent_message = await update.message.reply_document(
                     document=download_directory,
                     thumb=thumbnail,
                     caption=description,
+                    protect_content=flags["protect"],
                     progress=progress_for_pyrogram,
                     progress_args=(
                         Translation.UPLOAD_START,
@@ -308,13 +335,16 @@ async def youtube_dl_call_back(bot, update):
             else:
                 width, height, duration = await Mdata01(download_directory)
                 thumb_image_path = await Gthumb02(bot, update, duration, download_directory)
-                await update.message.reply_video(
+                sent_message = await update.message.reply_video(
                     video=download_directory,
                     caption=description,
+                    protect_content=flags["protect"],
                     duration=duration,
                     width=width,
                     height=height,
-                    supports_streaming=True,
+                    supports_streaming=flags["streaming"],
+                    has_spoiler=flags["spoiler"],
+                    show_caption_above_media=flags["caption_up"],
                     thumb=thumb_image_path,
                     progress=progress_for_pyrogram,
                     progress_args=(
@@ -323,6 +353,28 @@ async def youtube_dl_call_back(bot, update):
                         start_time
                     )
                 )
+
+        # ---------------- apply post-upload settings (dump / ss / sample)
+        await send_to_dump(bot, user_id, sent_message)
+        try:
+            if flags_extra.get("screenshots"):
+                shots = await generate_screenshots(download_directory, tmp_directory_for_each_user + "/ss")
+                for shot in shots:
+                    await update.message.reply_photo(shot, quote=True)
+            if flags_extra.get("sample"):
+                sample = await generate_sample(download_directory, tmp_directory_for_each_user + "/sample")
+                if sample:
+                    sample_msg = await update.message.reply_video(
+                        sample, caption="🎬 <b>Sᴀᴍᴘʟᴇ Vɪᴅᴇᴏ</b>", quote=True
+                    )
+                    await send_to_dump(bot, user_id, sample_msg)
+            if flags_extra.get("unzip"):
+                extracted = await extract_archive(download_directory, tmp_directory_for_each_user + "/unzip")
+                for item in extracted[:20]:
+                    unzipped = await update.message.reply_document(item, quote=True)
+                    await send_to_dump(bot, user_id, unzipped)
+        except Exception as extra_error:
+            logger.error(f"extra features error: {extra_error}")
 
         end_two = datetime.now()
         time_taken_for_upload = (end_two - end_one).seconds
