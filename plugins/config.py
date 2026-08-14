@@ -12,12 +12,12 @@ logging.basicConfig(
 class Config(object):
 
     # Required Telegram Bot Credentials
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "8021806435:AAFGhQDVA3OXJMmtM74qSSFSQyeeFNRiw2A")
+    BOT_TOKEN = os.environ.get("BOT_TOKEN", "8701626849:AAEa6USU1Tht0uMXFdBgKYP8m7XzYOFn1Xo")
     API_ID = int(os.environ.get("API_ID", 24720215))
     API_HASH = os.environ.get("API_HASH", "c0d3395590fecba19985f95d6300785e")
 
     # Bot username (optional)
-    BOT_USERNAME = os.environ.get("BOT_USERNAME", "Url_Uploader_NY_Bot")
+    BOT_USERNAME = os.environ.get("BOT_USERNAME", "NY_LINK_SHARE_BOT")
     SESSION_NAME = "UploaderXNTBot"
     SESSION_STR = ""
 
