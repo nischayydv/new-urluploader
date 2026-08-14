@@ -1,166 +1,149 @@
 # ⚠️ Credit: Developed by @NY_BOTS | Support: @NY_BOTS_SUPPORT | Channel: @NY_BOTS
-"""Premium (custom) emoji registry.
+"""
+Premium (custom) emoji helpers.
 
-Telegram premium emoji are rendered with the HTML entity:
+Telegram bots can render premium/custom emojis inside message text using the
+HTML entity:  <emoji id="ID">FALLBACK</emoji>
 
-    <emoji id="DOCUMENT_ID">FALLBACK</emoji>
-
-`DOCUMENT_ID` is the custom emoji document id, `FALLBACK` is the plain unicode
-emoji shown to clients that cannot render the premium one (and inside inline
-buttons, which never support custom emoji).
-
-Usage:
-    from plugins.emojis import E, e
-
-    text = f"{E.WELCOME} Hello!"          # premium, for message text/captions
-    label = f"{e('ROCKET')} UPLOAD"       # never use E.* inside buttons
+Inline button labels do NOT support custom emojis, so buttons use the plain
+unicode fallbacks defined in BTN below.
 """
 
-# ---------------------------------------------------------------------------
-# id -> plain unicode fallback
-# ---------------------------------------------------------------------------
-EMOJI_IDS: dict[str, str] = {
-    "VOTE": "5267095979097610740",
-    "JOIN": "6237668294896131350",
-    "CANCEL": "6240245571626475799",
-    "MAIN_MENU": "6240245571626475799",
-    "BACK": "6217402478825049695",
-    "CREATE": "5208891329626521299",
-    "CONNECT": "5244710862953941180",
-    "MANAGE": "6237621548472081271",
-    "ADD_VOTES": "6240003971126139705",
-    "REMOVE_VOTES": "6240003971126139705",
-    "LEADERBOARD": "6240027791014765668",
-    "END_GIVEAWAY": "6240085923397114865",
-    "ADMIN": "6237595159329113605",
-    "BROADCAST": "6237668294896131350",
-    "STATS": "6239790794719370356",
-    "SETTINGS": "6237621548472081271",
-    "USERS": "6237867138997034625",
-    "BACKUP": "6237900592497302202",
-    "CLEAR": "6240152061598504832",
-    "CHANNEL": "6237510794150419802",
-    "NOTIFICATION": "6240073270423462835",
-    "CONFIRM": "6239815031219820750",
-    "REFRESH": "6240085923397114865",
-    "WELCOME": "6332080283176672910",
-    "FIRE": "6334449730734529256",
-    "ARROW": "6332591195306334733",
-    "CHART": "6332186798365612896",
-    "HEART": "6237558987978447573",
-    "ROCKET": "5188481279963715781",
-    "CROWN": "6332246180583447893",
-    "ERROR": "6334723470475139278",
-    "ENDED": "6237572882197650867",
-    "STAR": "6239815031219820750",
-    "ID": "6237547619200014867",
-    "GIFT": "6239894475229895983",
-    "WINE": "6237510794150419802",
-    "SMILE": "6237867138997034625",
-    "LOVE": "6334437167955188087",
-    "LIGHTNING": "6240073270423462835",
-    "POINTER": "6237732706520668707",
-    "ALERT": "6240152061598504832",
-    "CLOWN": "6237900592497302202",
-    "SEARCH": "6239790794719370356",
-    "SPEAKER": "5217968773071401144",
-    "LINK": "5289511602393984968",
-    "CONFETTI": "6240085923397114865",
-    "LOCATION": "6240101054566897479",
-    "RIGHT": "6240295371772271503",
-    "DIAMOND": "6240003971126139705",
-    "CALENDAR": "6240027791014765668",
-    "WINNER": "6332435498446888848",
-    "MONEY_BAG": "6332246180583447893",
-    "CELEBRATE": "6237621707385871360",
-    "INBOX": "6237973405077871246",
-    "LOCK": "6332490478323243268",
-    "SHIELD": "6237595159329113605",
-}
-
-FALLBACKS: dict[str, str] = {
-    "VOTE": "🗳",
-    "JOIN": "📢",
-    "CANCEL": "✖️",
-    "MAIN_MENU": "🏠",
-    "BACK": "🔙",
-    "CREATE": "➕",
-    "CONNECT": "🔗",
-    "MANAGE": "🛠",
-    "ADD_VOTES": "💎",
-    "REMOVE_VOTES": "💎",
-    "LEADERBOARD": "📅",
-    "END_GIVEAWAY": "🎉",
-    "ADMIN": "🛡",
-    "BROADCAST": "📣",
-    "STATS": "🔎",
-    "SETTINGS": "⚙️",
-    "USERS": "👤",
-    "BACKUP": "💾",
-    "CLEAR": "🧹",
-    "CHANNEL": "🍷",
-    "NOTIFICATION": "⚡️",
-    "CONFIRM": "✅",
-    "REFRESH": "🔄",
-    "WELCOME": "👋",
-    "FIRE": "🔥",
-    "ARROW": "➡️",
-    "CHART": "📊",
-    "HEART": "❤️",
-    "ROCKET": "🚀",
-    "CROWN": "👑",
-    "ERROR": "❌",
-    "ENDED": "🚫",
-    "STAR": "⭐️",
-    "ID": "🆔",
-    "GIFT": "🎁",
-    "WINE": "🍷",
-    "SMILE": "😊",
-    "LOVE": "💖",
-    "LIGHTNING": "⚡️",
-    "POINTER": "👉",
-    "ALERT": "🚨",
-    "CLOWN": "🤡",
-    "SEARCH": "🔍",
-    "SPEAKER": "🔊",
-    "LINK": "🔗",
-    "CONFETTI": "🎊",
-    "LOCATION": "📍",
-    "RIGHT": "▶️",
-    "DIAMOND": "💎",
-    "CALENDAR": "🗓",
-    "WINNER": "🏆",
-    "MONEY_BAG": "💰",
-    "CELEBRATE": "🥳",
-    "INBOX": "📥",
-    "LOCK": "🔒",
-    "SHIELD": "🛡",
-}
+# ---------------------------------------------------------------- emoji ids
+EMOJI_VOTE = "5267095979097610740"
+EMOJI_JOIN = "6237668294896131350"
+EMOJI_CANCEL = "6240245571626475799"
+EMOJI_MAIN_MENU = "6240245571626475799"
+EMOJI_BACK = "6217402478825049695"
+EMOJI_CREATE = "5208891329626521299"
+EMOJI_CONNECT = "5244710862953941180"
+EMOJI_MANAGE = "6237621548472081271"
+EMOJI_ADD_VOTES = "6240003971126139705"
+EMOJI_REMOVE_VOTES = "6240003971126139705"
+EMOJI_LEADERBOARD = "6240027791014765668"
+EMOJI_END_GIVEAWAY = "6240085923397114865"
+EMOJI_ADMIN = "6237595159329113605"
+EMOJI_BROADCAST = "6237668294896131350"
+EMOJI_STATS = "6239790794719370356"
+EMOJI_SETTINGS = "6237621548472081271"
+EMOJI_USERS = "6237867138997034625"
+EMOJI_BACKUP = "6237900592497302202"
+EMOJI_CLEAR = "6240152061598504832"
+EMOJI_CHANNEL = "6237510794150419802"
+EMOJI_NOTIFICATION = "6240073270423462835"
+EMOJI_CONFIRM = "6239815031219820750"
+EMOJI_REFRESH = "6240085923397114865"
+EMOJI_WELCOME = "6332080283176672910"
+EMOJI_FIRE = "6334449730734529256"
+EMOJI_ARROW = "6332591195306334733"
+EMOJI_CHART = "6332186798365612896"
+EMOJI_HEART = "6237558987978447573"
+EMOJI_ROCKET = "5188481279963715781"
+EMOJI_CROWN = "6332246180583447893"
+EMOJI_ERROR = "6334723470475139278"
+EMOJI_ENDED = "6237572882197650867"
+EMOJI_STAR = "6239815031219820750"
+EMOJI_ID = "6237547619200014867"
+EMOJI_GIFT = "6239894475229895983"
+EMOJI_WINE = "6237510794150419802"
+EMOJI_SMILE = "6237867138997034625"
+EMOJI_LOVE = "6334437167955188087"
+EMOJI_LIGHTNING = "6240073270423462835"
+EMOJI_POINTER = "6237732706520668707"
+EMOJI_ALERT = "6240152061598504832"
+EMOJI_CLOWN = "6237900592497302202"
+EMOJI_SEARCH = "6239790794719370356"
+EMOJI_SPEAKER = "5217968773071401144"
+EMOJI_LINK = "5289511602393984968"
+EMOJI_CONFETTI = "6240085923397114865"
+EMOJI_LOCATION = "6240101054566897479"
+EMOJI_RIGHT = "6240295371772271503"
+EMOJI_DIAMOND = "6240003971126139705"
+EMOJI_CALENDAR = "6240027791014765668"
+EMOJI_WINNER = "6332435498446888848"
+EMOJI_MONEY_BAG = "6332246180583447893"
+EMOJI_CELEBRATE = "6237621707385871360"
+EMOJI_INBOX = "6237973405077871246"
+EMOJI_LOCK = "6332490478323243268"
+EMOJI_SHIELD = "6237595159329113605"
 
 
-def e(name: str) -> str:
-    """Plain unicode fallback — safe everywhere (buttons, alerts, logs)."""
-    return FALLBACKS.get(name, "")
+def e(emoji_id: str, fallback: str) -> str:
+    """Return a premium-emoji HTML entity with a safe unicode fallback."""
+    return f'<emoji id="{emoji_id}">{fallback}</emoji>'
 
 
-def premium(name: str) -> str:
-    """Premium emoji HTML entity — for message text and captions only."""
-    emoji_id = EMOJI_IDS.get(name)
-    if not emoji_id:
-        return e(name)
-    return f'<emoji id="{emoji_id}">{e(name)}</emoji>'
+class E:
+    """Ready-to-use premium emojis for message text."""
+
+    WELCOME = e(EMOJI_WELCOME, "👋")
+    ROCKET = e(EMOJI_ROCKET, "🚀")
+    FIRE = e(EMOJI_FIRE, "🔥")
+    STAR = e(EMOJI_STAR, "⭐")
+    CROWN = e(EMOJI_CROWN, "👑")
+    DIAMOND = e(EMOJI_DIAMOND, "💎")
+    HEART = e(EMOJI_HEART, "❤️")
+    LOVE = e(EMOJI_LOVE, "💖")
+    SMILE = e(EMOJI_SMILE, "😊")
+    ARROW = e(EMOJI_ARROW, "➤")
+    RIGHT = e(EMOJI_RIGHT, "▶️")
+    POINTER = e(EMOJI_POINTER, "👉")
+    LINK = e(EMOJI_LINK, "🔗")
+    SETTINGS = e(EMOJI_SETTINGS, "⚙️")
+    MANAGE = e(EMOJI_MANAGE, "🛠")
+    STATS = e(EMOJI_STATS, "📊")
+    CHART = e(EMOJI_CHART, "📈")
+    USERS = e(EMOJI_USERS, "👥")
+    ADMIN = e(EMOJI_ADMIN, "🛡")
+    SHIELD = e(EMOJI_SHIELD, "🛡")
+    LOCK = e(EMOJI_LOCK, "🔒")
+    ID = e(EMOJI_ID, "🆔")
+    INBOX = e(EMOJI_INBOX, "📥")
+    UPLOAD = e(EMOJI_ADD_VOTES, "📤")
+    CHANNEL = e(EMOJI_CHANNEL, "📢")
+    SPEAKER = e(EMOJI_SPEAKER, "🔊")
+    BROADCAST = e(EMOJI_BROADCAST, "📣")
+    NOTIFICATION = e(EMOJI_NOTIFICATION, "🔔")
+    LIGHTNING = e(EMOJI_LIGHTNING, "⚡")
+    REFRESH = e(EMOJI_REFRESH, "🔄")
+    CONFIRM = e(EMOJI_CONFIRM, "✅")
+    ERROR = e(EMOJI_ERROR, "❌")
+    ALERT = e(EMOJI_ALERT, "⚠️")
+    CANCEL = e(EMOJI_CANCEL, "🚫")
+    BACK = e(EMOJI_BACK, "🔙")
+    MENU = e(EMOJI_MAIN_MENU, "🏠")
+    GIFT = e(EMOJI_GIFT, "🎁")
+    CONFETTI = e(EMOJI_CONFETTI, "🎉")
+    CELEBRATE = e(EMOJI_CELEBRATE, "🥳")
+    WINNER = e(EMOJI_WINNER, "🏆")
+    MONEY = e(EMOJI_MONEY_BAG, "💰")
+    CALENDAR = e(EMOJI_CALENDAR, "📅")
+    CLOCK = e(EMOJI_CALENDAR, "🕒")
+    SEARCH = e(EMOJI_SEARCH, "🔍")
+    CLEAR = e(EMOJI_CLEAR, "🗑")
+    BACKUP = e(EMOJI_BACKUP, "🗂")
+    CREATE = e(EMOJI_CREATE, "✨")
+    CONNECT = e(EMOJI_CONNECT, "🔌")
+    LEADERBOARD = e(EMOJI_LEADERBOARD, "🏅")
+    ENDED = e(EMOJI_ENDED, "🛑")
+    LOCATION = e(EMOJI_LOCATION, "📍")
+    WINE = e(EMOJI_WINE, "🍷")
+    JOIN = e(EMOJI_JOIN, "🤝")
+    VOTE = e(EMOJI_VOTE, "🗳")
 
 
-class _PremiumEmoji:
-    """Attribute access sugar: ``E.ROCKET`` -> premium emoji HTML."""
+class BTN:
+    """Plain unicode labels for inline buttons (custom emoji not allowed)."""
 
-    def __getattr__(self, name: str) -> str:
-        if name not in EMOJI_IDS:
-            raise AttributeError(f"Unknown premium emoji: {name}")
-        return premium(name)
-
-    def __getitem__(self, name: str) -> str:
-        return premium(name)
-
-
-E = _PremiumEmoji()
+    SETTINGS = "⚙️ Sᴇᴛᴛɪɴɢs"
+    HELP = "💡 Hᴇʟᴘ"
+    ABOUT = "🎯 Aʙᴏᴜᴛ"
+    PLANS = "💎 Pʟᴀɴs"
+    STATS = "📊 Sᴛᴀᴛs"
+    BACK = "◀️ Bᴀᴄᴋ"
+    HOME = "🏠 Hᴏᴍᴇ"
+    CLOSE = "✖️ Cʟᴏsᴇ"
+    REFRESH = "🔄 Rᴇғʀᴇsʜ"
+    UPDATES = "📢 Uᴘᴅᴀᴛᴇs"
+    SUPPORT = "🤝 Sᴜᴘᴘᴏʀᴛ"
+    OWNER = "👑 Oᴡɴᴇʀ"
