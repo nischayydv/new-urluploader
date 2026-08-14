@@ -18,7 +18,20 @@ class Database:
             apply_caption=True,
             upload_as_doc=False,
             thumbnail=None,
-            caption=None
+            caption=None,
+            bot_updates=True,
+            ytdl_filter="mp4",
+            generate_ss=False,
+            spoiler=False,
+            no_forwards=False,
+            filename_cleaner=False,
+            metadata=None,
+            generate_sample_video=False,
+            streaming=True,
+            caption_up=False,
+            dump_channel=None,
+            blocklist_words=[],
+            auto_unzip=False,
         )
 
     async def add_user(self, id):
@@ -67,8 +80,63 @@ class Database:
         user = await self.col.find_one({'id': int(id)})
         return user.get('caption', None)
 
+    # ------------------------------------------------ generic settings store
+    DEFAULTS = {
+        "apply_caption": True,
+        "upload_as_doc": False,
+        "thumbnail": None,
+        "caption": None,
+        "bot_updates": True,
+        "ytdl_filter": "mp4",
+        "generate_ss": False,
+        "spoiler": False,
+        "no_forwards": False,
+        "filename_cleaner": False,
+        "metadata": None,
+        "generate_sample_video": False,
+        "streaming": True,
+        "caption_up": False,
+        "dump_channel": None,
+        "blocklist_words": [],
+        "auto_unzip": False,
+    }
+
+    async def get_setting(self, id, key):
+        user = await self.col.find_one({'id': int(id)})
+        if not user:
+            await self.add_user(int(id))
+            return self.DEFAULTS.get(key)
+        return user.get(key, self.DEFAULTS.get(key))
+
+    async def set_setting(self, id, key, value):
+        await self.col.update_one({'id': int(id)}, {'$set': {key: value}}, upsert=True)
+
+    async def toggle_setting(self, id, key):
+        current = await self.get_setting(id, key)
+        new_value = not bool(current)
+        await self.set_setting(id, key, new_value)
+        return new_value
+
+    async def reset_settings(self, id):
+        await self.col.update_one({'id': int(id)}, {'$set': dict(self.DEFAULTS)}, upsert=True)
+
+    async def get_generate_ss(self, id):
+        return await self.get_setting(id, 'generate_ss')
+
+    async def set_generate_ss(self, id, value):
+        await self.set_setting(id, 'generate_ss', value)
+
+    async def get_generate_sample_video(self, id):
+        return await self.get_setting(id, 'generate_sample_video')
+
+    async def set_generate_sample_video(self, id, value):
+        await self.set_setting(id, 'generate_sample_video', value)
+
     async def get_user_data(self, id) -> dict:
         user = await self.col.find_one({'id': int(id)})
+        if not user:
+            await self.add_user(int(id))
+            user = await self.col.find_one({'id': int(id)})
         return user or None
 
 
