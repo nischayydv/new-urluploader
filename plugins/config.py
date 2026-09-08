@@ -12,7 +12,7 @@ logging.basicConfig(
 class Config(object):
 
     # Required Telegram Bot Credentials
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "8701626849:AAEZhBhSOXp5MqrGeKAWaZsLu4sCdPSz2kM")
+    BOT_TOKEN = os.environ.get("BOT_TOKEN", "8701626849:AAFkDv1aRmTNapIczrZVGjZvzdZ8GvRwSns")
     API_ID = int(os.environ.get("API_ID", 24720215))
     API_HASH = os.environ.get("API_HASH", "c0d3395590fecba19985f95d6300785e")
 
